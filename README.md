@@ -12,7 +12,7 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 |---|---|---|
 |useAvroEventFormat|  Whether use avro format for event |false|
 
-#### client 
+#### Client 
 
 |Name|Description|Default|
 |---|---|---|
@@ -37,7 +37,7 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 |keepAliveIntervalSeconds| Set keep alive interval in seconds for each client-broker-connection. |30|
 |connectionTimeout| Set the duration of time to wait for a connection to a broker to be established. |30|
 
-#### producer
+#### Producer
 |Name|Description|Default|
 |---|---|---|
 |topicName| Specify the topic this producer will be publishing on. |""|
@@ -54,14 +54,14 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 
 ### Usage example in Docker
 
-#### start pulsar service
+#### Start pulsar service
 ```$xslt
 docker pull apachepulsar/pulsar:2.3.0
 docker run -d -it -p 6650:6650 -p 8080:8080 -v $PWD/data:/pulsar/data --name pulsar-flume-standalone apachepulsar/pulsar:2.3.0 bin/pulsar standalone
 ```
 
-#### start consumer script pulsar-flume.py
-
+#### Start consumer script pulsar-flume.py
+###### pulsar-flume.py
 ```$xslt
 import pulsar
 
@@ -83,17 +83,17 @@ docker exec -it pulsar-flume-standalone /bin/bash
 python pulsar-flume.py
 ```
 
-### install and set up flume 
+### Install and set up flume 
 
-### setting up
+### Setting up
 
-#### init java and maven environment
+#### Init java and maven environment
 ```$xslt
 docker pull maven:3.6-jdk-8
-docker run -d -it --link pulsar-flume-standalone -p 44445:44445 --name flume
+docker run -d -it --link pulsar-flume-standalone -p 44445:44445 --name flume maven:3.6-jdk-8 /bin/bash
 ```
 
-#### download and build
+#### Download and build
 ```$xslt
 docker exec -it flume /bin/bash
 git clone https://github.com/AmateurEvents/flume-ng-pulsar-sink
@@ -105,9 +105,9 @@ tar -zxvf apache-flume-1.9.0-bin.tar.gz
 cp flume-ng-pulsar-sink/target/flume-ng-pulsar-sink-1.9.0.jar apache-flume-1.9.0-bin/lib/
 ```
 
-#### set up flume
+#### Set up flume
 
-##### copy flume-example.conf and config file to flume conf
+##### Copy flume-example.conf and flume-env.sh file to flume conf
 
 ###### flume-example.conf
 ```$xslt
@@ -120,13 +120,13 @@ a1.channels = c1
 
 # Describe/configure the source
 a1.sources.r1.type = netcat
-a1.sources.r1.bind = localhost
+a1.sources.r1.bind = 0.0.0.0
 a1.sources.r1.port = 44445
 
 
 ## Describe the sink
 a1.sinks.k1.type = org.apache.flume.sink.pulsar.PulsarSink
-a1.sinks.k1.serviceUrl = 127.0.0.1:6650
+a1.sinks.k1.serviceUrl = pulsar-flume-standalone:6650
 a1.sinks.k1.topicName = test
 a1.sinks.k1.producerName = testProducer
 
@@ -153,16 +153,32 @@ docker cp flume-env.sh flume:/apache-flume-1.9.0-bin/conf/
 ```
 
 
-##### start flume ng agent
+##### Start flume ng agent
 
 ```$xslt
 docker exec -it flume /bin/bash
 apache-flume-1.9.0-bin/bin/flume-ng agent --conf apache-flume-1.9.0-bin/conf/ -f apache-flume-1.9.0-bin/conf/flume-example.conf -n a1
 ```
 
-##### test
+##### Test send data and receive data
+
+Open another window, send data to port 444445 of flume
+
 ```$xslt
-telnet localhost 44445
+➜  ~ telnet localhost 44445
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+hello
+OK
+world
+OK
 ```
 
-### Configuration Options
+In consumer window, the following information was received
+
+```$xslt
+'eceived message: 'hello
+'eceived message: 'world
+``` 
+
