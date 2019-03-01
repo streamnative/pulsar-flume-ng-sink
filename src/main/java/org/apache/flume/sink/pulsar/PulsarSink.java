@@ -104,6 +104,28 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
     private Integer compressionType;
 
+    private Boolean enableTcpNoDelay;
+
+    private String tlsTrustCertsFilePath;
+
+    private Boolean allowTlsInsecureConnection;
+
+    private Boolean enableTlsHostnameVerification;
+
+    private Integer statsInterval;
+
+    private Integer maxConcurrentLookupRequests;
+
+    private Integer maxLookupRequests;
+
+    private Integer maxNumberOfRejectedRequestPerConnection;
+
+    private Integer keepAliveIntervalSeconds;
+
+    private Integer connectionTimeout;
+
+    private Integer numListenerThreads;
+
     //Fine to use null for initial value, Avro will create new ones if this
     // is null
     private BinaryEncoder encoder = null;
@@ -113,16 +135,29 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
         batchSize = context.getInteger(BATCH_SIZE, 1000);
         useAvroEventFormat = context.getBoolean("useAvroEventFormat", false);
 
-        serviceUrl = context.getString("serviceUrl", "");
+        // client options
+        serviceUrl = context.getString("serviceUrl", "localhost:6650");
         authPluginClassName = context.getString("authPluginClassName", "");
-        authParamsString = context.getString("authPluginClassName", "");
+        authParamsString = context.getString("authParamsString", "");
         tlsCertFile = context.getString("tlsCertFile", "");
         tlsKeyFile = context.getString("tlsKeyFile", "");
         useTLS = context.getBoolean("useTLS", false);
         operationTimeout = context.getInteger("operationTimeout", 0);
         numIoThreads = context.getInteger("numIoThreads", 0);
         connectionsPerBroker = context.getInteger("connectionsPerBroker", 0);
+        enableTcpNoDelay = context.getBoolean("enableTcpNoDelay", false);
+        tlsTrustCertsFilePath = context.getString("tlsTrustCertsFilePath", "");
+        allowTlsInsecureConnection = context.getBoolean("allowTlsInsecureConnection", false);
+        enableTlsHostnameVerification = context.getBoolean("enableTlsHostnameVerification", false);
+        statsInterval = context.getInteger("statsInterval", 0);
+        maxConcurrentLookupRequests = context.getInteger("maxConcurrentLookupRequests", 0);
+        maxLookupRequests = context.getInteger("maxLookupRequests", 0);
+        maxNumberOfRejectedRequestPerConnection = context.getInteger("maxNumberOfRejectedRequestPerConnection", 0);
+        keepAliveIntervalSeconds = context.getInteger("keepAliveIntervalSeconds", 0);
+        connectionTimeout = context.getInteger("connectionTimeout", 0);
+        numListenerThreads = context.getInteger("numListenerThreads", 0);
 
+        // producer options
         topicName = context.getString("topicName", "");
         producerName = context.getString("producerName", "");
         sendTimeout = context.getInteger("sendTimeout", 10);
@@ -201,6 +236,30 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
     public synchronized void start() {
         try{
             log.info("start pulsar producer");
+            initPulsarClient();
+            initPulsarProducer();
+            this.counter = new SinkCounter("flume-sink");
+            super.start();
+        } catch (Exception e) {
+            log.error("init pulsar failed:{}", e.getMessage());
+        }
+
+    }
+
+    @Override
+    public synchronized void stop() {
+        try{
+            log.info("stop pulsar producer");
+            producer.close();
+            client.close();
+        } catch (Exception e) {
+            log.error("stop pulsar failed");
+        }
+        super.stop();
+    }
+
+    private void initPulsarClient() {
+        try {
             clientBuilder = PulsarClient.builder();
             if (authPluginClassName.length() > 0 && authParamsString.length() > 0) {
                 clientBuilder.authentication(authPluginClassName, authPluginClassName);
@@ -210,7 +269,6 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
             } else {
                 clientBuilder.serviceUrl("pulsar://" + serviceUrl);
             }
-            log.info(serviceUrl);
             if (tlsCertFile.length() > 0 && tlsKeyFile.length() > 0) {
                 Map<String, String> authParams = new HashMap<>();
                 authParams.put("tlsCertFile", tlsCertFile);
@@ -225,13 +283,50 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
             if (numIoThreads > 0) {
                 clientBuilder.ioThreads(numIoThreads);
             }
+            if (numListenerThreads > 0) {
+                clientBuilder.listenerThreads(numListenerThreads);
+            }
             if (connectionsPerBroker > 0) {
                 clientBuilder.connectionsPerBroker(connectionsPerBroker);
             }
-
+            if (enableTcpNoDelay) {
+                clientBuilder.enableTcpNoDelay(enableTcpNoDelay);
+            }
+            if (tlsTrustCertsFilePath.length() > 0) {
+                clientBuilder.tlsTrustCertsFilePath(tlsTrustCertsFilePath);
+            }
+            if (allowTlsInsecureConnection) {
+                clientBuilder.allowTlsInsecureConnection(allowTlsInsecureConnection);
+            }
+            if (enableTlsHostnameVerification) {
+                clientBuilder.enableTlsHostnameVerification(enableTlsHostnameVerification);
+            }
+            if (statsInterval > 0) {
+                clientBuilder.statsInterval(statsInterval, TimeUnit.SECONDS);
+            }
+            if (maxConcurrentLookupRequests > 0) {
+                clientBuilder.maxConcurrentLookupRequests(maxConcurrentLookupRequests);
+            }
+            if (maxLookupRequests > 0) {
+                clientBuilder.maxLookupRequests(maxLookupRequests);
+            }
+            if (maxNumberOfRejectedRequestPerConnection > 0) {
+                clientBuilder.maxNumberOfRejectedRequestPerConnection(maxNumberOfRejectedRequestPerConnection);
+            }
+            if (keepAliveIntervalSeconds > 0) {
+                clientBuilder.keepAliveInterval(keepAliveIntervalSeconds, TimeUnit.SECONDS);
+            }
+            if (connectionTimeout > 0) {
+                clientBuilder.connectionTimeout(connectionTimeout, TimeUnit.SECONDS);
+            }
             client = clientBuilder.build();
-            log.info(topicName);
-            log.info(producerName);
+        } catch(Exception e) {
+            log.error("init pulsar client failed:{}", e.getMessage());
+        }
+    }
+
+    private void initPulsarProducer() {
+        try {
             producerBuilder = client.newProducer();
             if(topicName.length() > 0) {
                 producerBuilder = producerBuilder.topic(topicName);
@@ -254,7 +349,7 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 producerBuilder.batchingMaxMessages(batchMessagesMaxMessagesPerBatch);
             }
             if (batchDelay > 0) {
-                producerBuilder.batchingMaxPublishDelay(batchDelay, TimeUnit.SECONDS);
+                producerBuilder.batchingMaxPublishDelay(batchDelay, TimeUnit.MILLISECONDS);
             }
             if (MessageRoutingMode.SinglePartition.equals(messageRoutingMode)) {
                 producerBuilder.messageRoutingMode(MessageRoutingMode.SinglePartition);
@@ -278,24 +373,9 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 producerBuilder.compressionType(CompressionType.NONE);
             }
             producer = producerBuilder.create();
-            this.counter = new SinkCounter("flume-sink");
-            super.start();
         } catch (Exception e) {
-            log.error("init pulsar failed:{}", e.getMessage());
+            log.error("init pulsar producer failed:{}", e.getMessage());
         }
-
-    }
-
-    @Override
-    public synchronized void stop() {
-        try{
-            log.info("stop pulsar producer");
-            producer.close();
-            client.close();
-        } catch (Exception e) {
-            log.error("init pulsar failed");
-        }
-        super.stop();
     }
 
     private byte[] serializeEvent(Event event, boolean useAvroEventFormat) throws IOException {
