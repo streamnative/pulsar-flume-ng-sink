@@ -112,6 +112,8 @@ cp flume-ng-pulsar-sink/target/flume-ng-pulsar-sink-1.9.0.jar apache-flume-1.9.0
 ###### flume-example.conf
 ```$xslt
 # example.conf: A single-node Flume configuration
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink?ref=badge_shield)
+
 
 # Name the components on this agent
 a1.sources = r1
@@ -182,3 +184,7 @@ In consumer window, the following information was received
 'eceived message: 'world
 ``` 
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink?ref=badge_large)
