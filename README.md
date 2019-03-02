@@ -1,4 +1,8 @@
-### Flume-Ng-Pulsar-Sink
+# Flume Ng Pulsar Sink
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Build Status](https://travis-ci.org/streamnative/flume-ng-pulsar-sink.svg?branch=master)](https://travis-ci.org/streamnative/flume-ng-pulsar-sink)
+
 This is a [Flume](https://github.com/apache/flume) Sink implementation that can publish data to a [Pulsar](https://github.com/apache/pulsar) topic
 
 ### Tested version
