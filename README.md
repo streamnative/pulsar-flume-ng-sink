@@ -1,4 +1,7 @@
-### Flume-Ng-Pulsar-Sink
+# Flume-Ng-Pulsar-Sink
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink?ref=badge_shield)
+
 This is a [Flume](https://github.com/apache/flume) Sink implementation that can publish data to a [Pulsar](https://github.com/apache/pulsar) topic
 
 ### Tested version
@@ -181,4 +184,10 @@ In consumer window, the following information was received
 'eceived message: 'hello
 'eceived message: 'world
 ``` 
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink?ref=badge_large)
 
