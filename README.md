@@ -6,10 +6,160 @@
 
 This is a [Flume](https://github.com/apache/flume) Sink implementation that can publish data to a [Pulsar](https://github.com/apache/pulsar) topic
 
-### Tested version
+## Compatibility
 
-* Tested using Apache Flume NG 1.9.0
-* Tested using Apache Pulsar 2.3.0
+This sink is developed and tested using Apache Flume NG 1.9.0 and Apache Pulsar Client 2.3.0.
+
+## Getting Started
+
+### Requirements
+
+- [Docker](https://docs.docker.com/docker-for-mac/install/)
+
+### Clone the project
+
+```bash
+$ git clone https://github.com/streamnative/flume-ng-pulsar-sink.git
+```
+
+### Start Pulsar Standalone
+
+```$xslt
+docker pull apachepulsar/pulsar:2.3.0
+docker run -d -it -p 6650:6650 -p 8080:8080 -v $PWD/data:/pulsar/data --name pulsar-flume-standalone apachepulsar/pulsar:2.3.0 bin/pulsar standalone
+```
+
+### Start Pulsar Consumer
+
+Start a [consumer](src/test/python/pulsar-flume.py) to consume messages from topic `flume-test-topic`.
+
+```$xslt
+docker cp src/test/python/pulsar-flume.py pulsar-flume-standalone:/pulsar
+docker exec -it pulsar-flume-standalone /bin/bash
+python pulsar-flume.py
+```
+
+### Setup up Flume
+
+#### Prepare Build Environment
+
+Open a new terminal to start a docker instance `flume` of `maven:3.6-jdk-8` in the same network as `pulsar-flume-standalone`
+we started at previous step. We will use this `flume` docker instace to install Flume and Flume-Ng-Pulsar-Sink.
+
+```$xslt
+docker pull maven:3.6-jdk-8
+docker run -d -it --link pulsar-flume-standalone -p 44445:44445 --name flume maven:3.6-jdk-8 /bin/bash
+```
+
+#### Install Flume
+
+Go to the docker instance `flume`
+
+```$xslt
+docker exec -it flume /bin/bash
+```
+
+At `flume` instance:
+
+```
+wget http://apache.01link.hk/flume/1.9.0/apache-flume-1.9.0-bin.tar.gz
+tar -zxvf apache-flume-1.9.0-bin.tar.gz
+```
+
+#### Install Pulsar Sink
+
+At `flume` instance:
+
+```$xslt
+git clone https://github.com/streamnative/flume-ng-pulsar-sink
+cd flume-ng-pulsar-sink
+mvn clean package
+cd ..
+cp flume-ng-pulsar-sink/target/flume-ng-pulsar-sink-1.9.0.jar apache-flume-1.9.0-bin/lib/
+exit
+```
+
+#### Configure Flume
+
+Copy the example configurations to `flume`:
+
+- [flume-example.conf](src/test/resources/flume-example.conf)
+- [flume-env.sh](src/test/resources/flume-env.sh)
+
+```$xslt
+docker cp src/test/resources/flume-example.conf flume:/apache-flume-1.9.0-bin/conf/
+docker cp src/test/resources/flume-env.sh flume:/apache-flume-1.9.0-bin/conf/
+```
+
+#### Start Flume Ng Agent
+
+```$xslt
+docker exec -it flume /bin/bash
+```
+
+At `flume` instance:
+
+```$xslt
+apache-flume-1.9.0-bin/bin/flume-ng agent --conf apache-flume-1.9.0-bin/conf/ -f apache-flume-1.9.0-bin/conf/flume-example.conf -n a1
+```
+
+### Send Data
+
+Open another terminal, send data to port 44445 of flume
+
+```$xslt
+➜  ~ telnet localhost 44445
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+hello
+OK
+world
+OK
+```
+
+At the terminal running `pulsar-consumer.py`, you will see following output:
+
+```$xslt
+'eceived message: 'hello
+'eceived message: 'world
+``` 
+
+### Cleanup 
+
+`flume` and `pulsar-flume-standalone` are running at background. Please remember to kill them at the end of this tutorial.
+
+```bash
+$ docker ps | grep pulsar-flume-standalone | awk '{ print $1 }' | xargs docker kill
+$ docker ps | grep flume | awk '{ print $1 }' | xargs docker kill
+```
+
+## Installation
+
+### Requirements
+
+- JDK 1.8+
+- Apache Maven 3.x
+
+### Build from Source
+
+Clone the project from Github:
+
+```bash
+$ git clone https://github.com/streamnative/flume-ng-pulsar-sink.git
+```
+
+Building the Flume Ng Sink using maven:
+
+```bash
+$ cd flume-ng-pulsar-sink
+$ mvn clean package
+```
+
+Once it is built successfully, you will find a jar `flume-ng-pulsar-sink-<version>.jar` generated under `target` directory.
+You can drop the built jar at your flume installation under `lib` directory.
+
+## Usage
 
 ### Configurations
 
@@ -56,138 +206,7 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 |hashingSchema| JavaStringHash,Murmur3_32Hash(0,1) |0|
 |compressionType| NONE,LZ4,ZLIB,ZSTD(0,1,2,3) |0|
 
-
-### Usage example in Docker
-
-#### Start pulsar service
-```$xslt
-docker pull apachepulsar/pulsar:2.3.0
-docker run -d -it -p 6650:6650 -p 8080:8080 -v $PWD/data:/pulsar/data --name pulsar-flume-standalone apachepulsar/pulsar:2.3.0 bin/pulsar standalone
-```
-
-#### Start consumer script pulsar-flume.py
-###### pulsar-flume.py
-```$xslt
-import pulsar
-
-client = pulsar.Client('pulsar://localhost:6650')
-consumer = client.subscribe('test',
-                            subscription_name='testProducer')
-
-while True:
-    msg = consumer.receive()
-    print("Received message: '%s'" % msg.data())
-    consumer.acknowledge(msg)
-
-client.close()
-```
-
-```$xslt
-docker cp pulsar-flume.py pulsar-flume-standalone:/pulsar
-docker exec -it pulsar-flume-standalone /bin/bash
-python pulsar-flume.py
-```
-
-### Install and set up flume 
-
-### Setting up
-
-#### Init java and maven environment
-```$xslt
-docker pull maven:3.6-jdk-8
-docker run -d -it --link pulsar-flume-standalone -p 44445:44445 --name flume maven:3.6-jdk-8 /bin/bash
-```
-
-#### Download and build
-```$xslt
-docker exec -it flume /bin/bash
-git clone https://github.com/AmateurEvents/flume-ng-pulsar-sink
-cd flume-ng-pulsar-sink
-mvn clean package
-cd ..
-wget http://apache.01link.hk/flume/1.9.0/apache-flume-1.9.0-bin.tar.gz
-tar -zxvf apache-flume-1.9.0-bin.tar.gz
-cp flume-ng-pulsar-sink/target/flume-ng-pulsar-sink-1.9.0.jar apache-flume-1.9.0-bin/lib/
-```
-
-#### Set up flume
-
-##### Copy flume-example.conf and flume-env.sh file to flume conf
-
-###### flume-example.conf
-```$xslt
-# example.conf: A single-node Flume configuration
-
-# Name the components on this agent
-a1.sources = r1
-a1.sinks = k1
-a1.channels = c1
-
-# Describe/configure the source
-a1.sources.r1.type = netcat
-a1.sources.r1.bind = 0.0.0.0
-a1.sources.r1.port = 44445
-
-
-## Describe the sink
-a1.sinks.k1.type = org.apache.flume.sink.pulsar.PulsarSink
-a1.sinks.k1.serviceUrl = pulsar-flume-standalone:6650
-a1.sinks.k1.topicName = test
-a1.sinks.k1.producerName = testProducer
-
-# Use a channel which buffers events in memory
-a1.channels.c1.type = memory
-a1.channels.c1.capacity = 1000
-a1.channels.c1.transactionCapacity = 1000
-
-# Bind the source and sink to the channel
-a1.sources.r1.channels = c1
-a1.sinks.k1.channel = c1
-```
-
-###### flume-env.sh
-```$xslt
-export JAVA_HOME=/docker-java-home
-
-FLUME_CLASSPATH=/docker-java-home/lib
-```
-
-```$xslt
-docker cp flume-example.conf flume:/apache-flume-1.9.0-bin/conf/
-docker cp flume-env.sh flume:/apache-flume-1.9.0-bin/conf/
-```
-
-
-##### Start flume ng agent
-
-```$xslt
-docker exec -it flume /bin/bash
-apache-flume-1.9.0-bin/bin/flume-ng agent --conf apache-flume-1.9.0-bin/conf/ -f apache-flume-1.9.0-bin/conf/flume-example.conf -n a1
-```
-
-##### Test send data and receive data
-
-Open another window, send data to port 44445 of flume
-
-```$xslt
-➜  ~ telnet localhost 44445
-Trying ::1...
-Connected to localhost.
-Escape character is '^]'.
-hello
-OK
-world
-OK
-```
-
-In consumer window, the following information was received
-
-```$xslt
-'eceived message: 'hello
-'eceived message: 'world
-``` 
-
-## License
+# License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
 
