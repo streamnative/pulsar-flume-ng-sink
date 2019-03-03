@@ -167,7 +167,7 @@ apache-flume-1.9.0-bin/bin/flume-ng agent --conf apache-flume-1.9.0-bin/conf/ -f
 
 ##### Test send data and receive data
 
-Open another window, send data to port 444445 of flume
+Open another window, send data to port 44445 of flume
 
 ```$xslt
 ➜  ~ telnet localhost 44445
