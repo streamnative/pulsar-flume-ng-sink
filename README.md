@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Build Status](https://travis-ci.org/streamnative/flume-ng-pulsar-sink.svg?branch=master)](https://travis-ci.org/streamnative/flume-ng-pulsar-sink)
 
+
 This is a [Flume](https://github.com/apache/flume) Sink implementation that can publish data to a [Pulsar](https://github.com/apache/pulsar) topic
 
 ### Tested version
@@ -185,4 +186,10 @@ In consumer window, the following information was received
 'eceived message: 'hello
 'eceived message: 'world
 ``` 
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fstreamnative%2Fflume-ng-pulsar-sink?ref=badge_large)
 
