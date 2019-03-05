@@ -10,8 +10,6 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 
 This sink is developed and tested using Apache Flume NG 1.9.0 and Apache Pulsar Client 2.3.0.
 
-## Getting Started
-
 ### Requirements
 
 - [Docker](https://docs.docker.com/docker-for-mac/install/)
@@ -166,6 +164,7 @@ You can drop the built jar at your flume installation under `lib` directory.
 |Name|Description|Default|
 |---|---|---|
 |useAvroEventFormat|  Whether use avro format for event |false|
+|syncMode|  Mode of send data to pulsar |true|
 
 #### Client 
 
