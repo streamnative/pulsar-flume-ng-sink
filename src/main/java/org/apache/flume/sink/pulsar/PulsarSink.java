@@ -203,7 +203,7 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 } else {
                     counter.incrementBatchCompleteCount();
                 }
-                producer.send(serializeEvent(event, useAvroEventFormat));
+                producer.newMessage().key(event.getHeaders().get("key")).value(serializeEvent(event, useAvroEventFormat)).send();
             }
             transaction.commit();
         } catch (Exception ex) {
