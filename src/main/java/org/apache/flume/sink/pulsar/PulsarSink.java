@@ -221,6 +221,9 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                     newMessage.sendAsync();
                 }
             }
+            if (!syncMode) {
+                producer.flush();
+            }
             transaction.commit();
         } catch (Exception ex) {
             log.error("Failed to publish events", ex);
