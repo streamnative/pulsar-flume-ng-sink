@@ -208,17 +208,18 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 } else {
                     counter.incrementBatchCompleteCount();
                 }
+                TypedMessageBuilder<byte[]> newMessage = producer.newMessage();
+                if (event.getHeaders() != null) {
+                    if (event.getHeaders().get("key") != null) {
+                        newMessage = newMessage.key(event.getHeaders().get("key"));
+                    }
+                    newMessage.value(serializeEvent(event, useAvroEventFormat)).properties(event.getHeaders());
+                }
                 if (syncMode) {
-                    producer.newMessage().
-                            key(event.getHeaders().get("key")).
-                            value(serializeEvent(event, useAvroEventFormat)).
-                            properties(event.getHeaders()).send();
+                    newMessage.send();
                 } else {
-                    producer.newMessage().
-                            key(event.getHeaders().get("key")).
-                            value(serializeEvent(event, useAvroEventFormat)).
-                            properties(event.getHeaders()).sendAsync().thenAccept(msgId -> {
-                        log.info("Success send message {}", msgId);
+                    newMessage.sendAsync().thenAccept(msgId -> {
+                        log.info("Success send message in asyncMode {}", msgId);
                     });
                 }
             }
