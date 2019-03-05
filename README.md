@@ -16,6 +16,7 @@ This is a [Flume](https://github.com/apache/flume) Sink implementation that can 
 |Name|Description|Default|
 |---|---|---|
 |useAvroEventFormat|  Whether use avro format for event |false|
+|syncMode|  Mode of send data to pulsar |true|
 
 #### Client 
 
