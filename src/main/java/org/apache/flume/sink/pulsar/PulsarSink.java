@@ -218,15 +218,8 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 if (syncMode) {
                     newMessage.send();
                 } else {
-                    newMessage.sendAsync().thenAccept(msgId -> {
-                        log.info("Success send message in asyncMode {}", msgId);
-                    });
+                    newMessage.sendAsync();
                 }
-            }
-            if (syncMode) {
-                producer.flush();
-            } else {
-                producer.flushAsync();
             }
             transaction.commit();
         } catch (Exception ex) {
