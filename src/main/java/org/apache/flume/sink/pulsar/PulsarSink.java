@@ -126,6 +126,8 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
     private Integer numListenerThreads;
 
+    private Boolean syncMode;
+
     //Fine to use null for initial value, Avro will create new ones if this
     // is null
     private BinaryEncoder encoder = null;
@@ -169,6 +171,9 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
         hashingScheme = context.getInteger("hashingSchema", -1);
         compressionType = context.getInteger("compressionType", -1);
 
+        // message options
+        syncMode = context.getBoolean("syncMode", true);
+
     }
 
     @Override
@@ -203,11 +208,27 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
                 } else {
                     counter.incrementBatchCompleteCount();
                 }
-                producer.send(serializeEvent(event, useAvroEventFormat));
+                if (syncMode) {
+                    producer.newMessage().
+                            key(event.getHeaders().get("key")).
+                            value(serializeEvent(event, useAvroEventFormat)).
+                            properties(event.getHeaders()).send();
+                } else {
+                    producer.newMessage().
+                            key(event.getHeaders().get("key")).
+                            value(serializeEvent(event, useAvroEventFormat)).
+                            properties(event.getHeaders()).sendAsync().thenAccept(msgId -> {
+                        log.info("Success send message {}", msgId);
+                    });
+                }
+            }
+            if (syncMode) {
+                producer.flush();
+            } else {
+                producer.flushAsync();
             }
             transaction.commit();
         } catch (Exception ex) {
-            String errorMsg = "Failed to publish events";
             log.error("Failed to publish events", ex);
             counter.incrementEventWriteOrChannelFail(ex);
             result = Status.BACKOFF;
