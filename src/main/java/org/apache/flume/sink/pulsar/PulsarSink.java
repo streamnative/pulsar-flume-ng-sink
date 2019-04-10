@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.flume.source.SpoolDirectorySourceConfigurationConstants.BATCH_SIZE;
+import static org.apache.flume.source.SpoolDirectorySourceConfigurationConstants.DEFAULT_BATCH_SIZE;
 
 
 public class PulsarSink extends AbstractSink implements Configurable, BatchSizeSupported {
@@ -134,7 +135,7 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
     @Override
     public void configure(Context context) {
-        batchSize = context.getInteger(BATCH_SIZE, 1000);
+        batchSize = context.getInteger(BATCH_SIZE, DEFAULT_BATCH_SIZE);
         useAvroEventFormat = context.getBoolean("useAvroEventFormat", false);
 
         // client options
@@ -189,6 +190,11 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
         Transaction transaction = null;
         Event event = null;
 
+        if (null == producer || null == client){
+            initPulsarClient();
+            initPulsarProducer();
+        }
+
         try {
             transaction = channel.getTransaction();
             transaction.begin();
@@ -198,16 +204,17 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
                 if (event == null) {
                     // no events available in the channel
+                    if (processedEvents == 0) {
+                        result = Status.BACKOFF;
+                        counter.incrementBatchEmptyCount();
+                    } else if (processedEvents < batchSize) {
+                        counter.incrementBatchUnderflowCount();
+                    } else {
+                        counter.incrementBatchCompleteCount();
+                    }
                     break;
                 }
-                if (processedEvents == 0) {
-                    result = Status.BACKOFF;
-                    counter.incrementBatchEmptyCount();
-                } else if (processedEvents < batchSize) {
-                    counter.incrementBatchUnderflowCount();
-                } else {
-                    counter.incrementBatchCompleteCount();
-                }
+
                 TypedMessageBuilder<byte[]> newMessage = producer.newMessage();
                 if (event.getHeaders() != null) {
                     if (event.getHeaders().get("key") != null) {
