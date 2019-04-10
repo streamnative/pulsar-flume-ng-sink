@@ -189,6 +189,11 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
         Transaction transaction = null;
         Event event = null;
 
+        if (null == producer || null == client){
+            initPulsarClient();
+            initPulsarProducer();
+        }
+
         try {
             transaction = channel.getTransaction();
             transaction.begin();
