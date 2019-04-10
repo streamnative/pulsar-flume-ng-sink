@@ -198,16 +198,17 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
                 if (event == null) {
                     // no events available in the channel
+                    if (processedEvents == 0) {
+                        result = Status.BACKOFF;
+                        counter.incrementBatchEmptyCount();
+                    } else if (processedEvents < batchSize) {
+                        counter.incrementBatchUnderflowCount();
+                    } else {
+                        counter.incrementBatchCompleteCount();
+                    }
                     break;
                 }
-                if (processedEvents == 0) {
-                    result = Status.BACKOFF;
-                    counter.incrementBatchEmptyCount();
-                } else if (processedEvents < batchSize) {
-                    counter.incrementBatchUnderflowCount();
-                } else {
-                    counter.incrementBatchCompleteCount();
-                }
+
                 TypedMessageBuilder<byte[]> newMessage = producer.newMessage();
                 if (event.getHeaders() != null) {
                     if (event.getHeaders().get("key") != null) {
