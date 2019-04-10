@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.flume.source.SpoolDirectorySourceConfigurationConstants.BATCH_SIZE;
+import static org.apache.flume.source.SpoolDirectorySourceConfigurationConstants.DEFAULT_BATCH_SIZE;
 
 
 public class PulsarSink extends AbstractSink implements Configurable, BatchSizeSupported {
@@ -134,7 +135,7 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
 
     @Override
     public void configure(Context context) {
-        batchSize = context.getInteger(BATCH_SIZE, 1000);
+        batchSize = context.getInteger(BATCH_SIZE, DEFAULT_BATCH_SIZE);
         useAvroEventFormat = context.getBoolean("useAvroEventFormat", false);
 
         // client options
