@@ -289,7 +289,7 @@ public class PulsarSink extends AbstractSink implements Configurable, BatchSizeS
         try {
             clientBuilder = PulsarClient.builder();
             if (authPluginClassName.length() > 0 && authParamsString.length() > 0) {
-                clientBuilder.authentication(authPluginClassName, authPluginClassName);
+                clientBuilder.authentication(authPluginClassName, authParamsString);
             }
             if (useTLS) {
                 clientBuilder.serviceUrl("pulsar://+ssl" + serviceUrl);
